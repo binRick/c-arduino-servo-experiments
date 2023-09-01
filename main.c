@@ -16,12 +16,8 @@ struct s_t {
 
 Servo s1, s2;
 s_t servo1, servo2;
-int s1_max = SERVO_1_MAX, s1_min = SERVO_1_MIN, s2_max = SERVO_2_MAX, s2_min = SERVO_2_MIN;
 int d = 10;
 
-
-void servo_1(void);
-void servo_2(void);
 
 void setup() {
   Serial.begin(9600); 
