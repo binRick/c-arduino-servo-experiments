@@ -19,7 +19,6 @@ s_t servo1, servo2;
 int s1_max = SERVO_1_MAX, s1_min = SERVO_1_MIN, s2_max = SERVO_2_MAX, s2_min = SERVO_2_MIN;
 int d = 10;
 
-int s1_pos = s1_min, s2_pos = s2_min;
 
 void servo_1(void);
 void servo_2(void);
@@ -59,7 +58,6 @@ void setup() {
 void loop(){
   servo_sweep(&servo1);
   servo_sweep(&servo2);
-
 }
 
 void servo_sweep(s_t *s){
@@ -68,11 +66,10 @@ void servo_sweep(s_t *s){
     servo_percentage(s, x);     
     delay(d);                      
   }
-for (x = s->pos_percentage; x >= 0; x -= 1) { 
+  for (x = s->pos_percentage; x >= 0; x -= 1) { 
     servo_percentage(s, x);     
     delay(d);                      
   }  
-  
 }
 
 void servo_percentage(s_t *s, int x){
