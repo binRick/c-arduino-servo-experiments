@@ -1,3 +1,6 @@
+#include <ArduinoJson.h>
+#include <ArduinoJson.hpp>
+
 #include <Servo.h>
 #define SERVO_1_PIN 11
 #define SERVO_1_MIN 75
@@ -18,6 +21,9 @@
 #define MODE_SWEEP_STR "sweep"
 #define MODE_SWEEP 1
 
+#define JSON_MAX_SIZE 1024
+#define DEBUG_JSON_STR false
+
 struct s_t {
   char label[32];
   Servo *servo;
@@ -28,7 +34,21 @@ struct s_t {
 };
 
 Servo s1, s2;
-s_t servo1, servo2;
+struct s_t servo1, servo2;
+
+struct s_t *find_servo(const char *label){
+  if(!strcmp(servo1.label, label)){
+    Serial.println("Matched Servo 1!");
+    return(&servo1);
+  }else if(!strcmp(servo2.label,label)){
+    Serial.println("Matched Servo 2!");
+    return(&servo2);
+  }else{
+    Serial.println("Unmatched Servo!");
+  }
+  return(NULL);
+
+}
 
 void setup() {
   Serial.begin(115200); 
@@ -53,6 +73,7 @@ void setup() {
   servo1.speed = SERVO_1_SPEED;
   servo1.start_percentage = SERVO_1_START_PERCENTAGE;
   sprintf(servo1.label, SERVO_1_LABEL);
+  
 
   servo2.servo = &s2;
   servo2.pin = SERVO_2_PIN;
@@ -61,8 +82,7 @@ void setup() {
   servo2.speed = SERVO_2_SPEED;
   servo2.start_percentage = SERVO_2_START_PERCENTAGE;
   sprintf(servo2.label, SERVO_2_LABEL);
-
-
+  
   servo1.servo->attach(servo1.pin); 
   Serial.println("Servo 1 Attached");
           
@@ -72,6 +92,8 @@ void setup() {
 
   servo_percentage(&servo1, servo1.start_percentage);
   servo_percentage(&servo2, servo2.start_percentage);
+
+  
 
 
 }
@@ -86,9 +108,46 @@ String get_serial_string(){
   return(String(""));
 }
 
+void parse_json_string(String s){  
+  DynamicJsonDocument doc(JSON_MAX_SIZE);
+  DeserializationError e = deserializeJson(doc, s);
+  if(e){
+    Serial.print("JSON Deserialization error using string: ");
+    Serial.println(s);    
+  }else{
+#if DEBUG_JSON_STR
+    Serial.print("JSON Derserialization success using string: ");
+    Serial.println(s);
+#endif
+    const char *servo_label  = doc["servo"];
+    const int servo_pos  = doc["pos"];
+    if(servo_label && (servo_pos>0 || servo_pos<0)){
+      Serial.print("Servo: ");
+      Serial.println(servo_label);
+      Serial.print("Pos: ");
+      Serial.println(servo_pos);
+      struct s_t *servo = find_servo(servo_label);
+      if(servo){
+          Serial.print("Managing servo ");
+          Serial.println(servo->label);
+      }
+    }else{
+      Serial.println("Servo not specified!");
+
+    }
+
+
+  }
+
+
+}
+
 int handle_serial(){
   String instr = get_serial_string();
-  instr.trim();                        // remove any \r \n whitespace at the end of the String
+  instr.trim();              
+  if(instr.length()>0){
+    parse_json_string(instr);
+  }
   if (instr == MODE_SWEEP_STR) {
     return(MODE_SWEEP);
   } else {
@@ -98,13 +157,14 @@ int handle_serial(){
 
 void loop(){
   int MODE = handle_serial();
+
   switch(MODE){
     case MODE_SWEEP:
       servo_sweep(&servo1);
       servo_sweep(&servo2);
     break;
     default:
-      Serial.println("Unhandled mode");
+      //Serial.println("Unhandled mode");
     break;
   }
 }
